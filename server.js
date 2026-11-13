@@ -269,9 +269,22 @@ const server = http.createServer(async (req, res) => {
     return res.end(html);
   }
 
-  if (url.pathname === '/') {
-    res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
-    return res.end('Dew Smart Media server is running. Open /r/<room-id> from the Second Life object.');
+ if (url.pathname === '/') {
+    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+    return res.end(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Dew Smart Media</title>
+      </head>
+      <body style="background:#171326;color:white;text-align:center;font-family:Arial;padding:60px 20px">
+        <h1>💜 DEW SMART MEDIA</h1>
+        <p>Your shared media server is running successfully!</p>
+        <p>Open your personal room from your Second Life object.</p>
+      </body>
+      </html>
+    `);
   }
   res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
   res.end('Not found');
