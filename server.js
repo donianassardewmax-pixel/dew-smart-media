@@ -26,9 +26,18 @@ const writeQueues = new Map();
 
 function defaultRoom(id) {
   return {
-    id, on: true, status: 'stopped', playlist: [], index: -1,
-    currentUrl: '', volume: 0.70, position: 0, startedAt: null,
-    updatedAt: Date.now(), revision: 0
+    id,
+    on: true,
+    status: 'stopped',
+    playlist: [],
+    index: -1,
+    currentUrl: '',
+    volume: 0.70,
+    position: 0,
+    startedAt: null,
+    cinemaMode: false,
+    updatedAt: Date.now(),
+    revision: 0
   };
 }
 
@@ -53,7 +62,6 @@ async function initDatabase() {
 function persistRoom(room) {
   const id = room.id;
   const data = JSON.stringify(room);
-
   const previous = writeQueues.get(id) || Promise.resolve();
 
   const next = previous
@@ -111,6 +119,7 @@ function snapshot(room) {
     index: room.index,
     currentUrl: room.currentUrl,
     volume: room.volume,
+    cinemaMode: !!room.cinemaMode,
     position: currentPosition(room, now),
     startedAt: room.status === 'playing' ? now : null,
     serverTime: now,
@@ -165,11 +174,17 @@ function applyCommand(room, command, value) {
       const url = normalizeUrl(value);
 
       if (!url) {
-        return { ok: false, error: 'Invalid URL. Only HTTP/HTTPS links are accepted.' };
+        return {
+          ok: false,
+          error: 'Invalid URL. Only HTTP/HTTPS links are accepted.'
+        };
       }
 
       if (room.playlist.length >= 50) {
-        return { ok: false, error: 'Playlist limit is 50 tracks.' };
+        return {
+          ok: false,
+          error: 'Playlist limit is 50 tracks.'
+        };
       }
 
       room.playlist.push(url);
@@ -198,7 +213,10 @@ function applyCommand(room, command, value) {
       }
 
       if (!room.currentUrl) {
-        return { ok: false, error: 'No media URL is selected.' };
+        return {
+          ok: false,
+          error: 'No media URL is selected.'
+        };
       }
 
       room.on = true;
@@ -222,7 +240,10 @@ function applyCommand(room, command, value) {
       const n = Number(value);
 
       if (!Number.isFinite(n) || n < 0) {
-        return { ok: false, error: 'Invalid seek position.' };
+        return {
+          ok: false,
+          error: 'Invalid seek position.'
+        };
       }
 
       room.position = n;
@@ -238,7 +259,10 @@ function applyCommand(room, command, value) {
       const n = Number(value);
 
       if (!Number.isFinite(n)) {
-        return { ok: false, error: 'Invalid volume.' };
+        return {
+          ok: false,
+          error: 'Invalid volume.'
+        };
       }
 
       room.volume = Math.min(1, Math.max(0, n));
@@ -246,18 +270,27 @@ function applyCommand(room, command, value) {
     }
 
     case 'volume_up':
-      room.volume = Math.min(1, Math.max(0, room.volume + Math.abs(Number(value) || 0.05)));
+      room.volume = Math.min(
+        1,
+        Math.max(0, room.volume + Math.abs(Number(value) || 0.05))
+      );
       break;
 
     case 'volume_down':
-      room.volume = Math.min(1, Math.max(0, room.volume - Math.abs(Number(value) || 0.05)));
+      room.volume = Math.min(
+        1,
+        Math.max(0, room.volume - Math.abs(Number(value) || 0.05))
+      );
       break;
 
     case 'select': {
       const n = Number(value);
 
       if (!Number.isInteger(n) || n < 0 || n >= room.playlist.length) {
-        return { ok: false, error: 'Invalid playlist index.' };
+        return {
+          ok: false,
+          error: 'Invalid playlist index.'
+        };
       }
 
       room.index = n;
@@ -272,7 +305,10 @@ function applyCommand(room, command, value) {
     case 'next':
     case 'previous': {
       if (!room.playlist.length) {
-        return { ok: false, error: 'Playlist is empty.' };
+        return {
+          ok: false,
+          error: 'Playlist is empty.'
+        };
       }
 
       const len = room.playlist.length;
@@ -280,7 +316,8 @@ function applyCommand(room, command, value) {
       if (room.index < 0) {
         room.index = 0;
       } else {
-        room.index = (room.index + (command === 'next' ? 1 : -1) + len) % len;
+        room.index =
+          (room.index + (command === 'next' ? 1 : -1) + len) % len;
       }
 
       room.currentUrl = room.playlist[room.index];
@@ -294,8 +331,15 @@ function applyCommand(room, command, value) {
     case 'sync':
       break;
 
+    case 'cinema':
+      room.cinemaMode = !!value;
+      break;
+
     default:
-      return { ok: false, error: `Unknown command: ${command}` };
+      return {
+        ok: false,
+        error: `Unknown command: ${command}`
+      };
   }
 
   room.updatedAt = now;
@@ -304,7 +348,10 @@ function applyCommand(room, command, value) {
   persistRoom(room);
   broadcast(room);
 
-  return { ok: true, state: snapshot(room) };
+  return {
+    ok: true,
+    state: snapshot(room)
+  };
 }
 
 function sendJson(res, status, obj) {
@@ -369,32 +416,46 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
-  const roomMatch = url.pathname.match(/^\/api\/([a-f0-9-]{20,64})\/(state|cmd|lsl)$/i);
+  const roomMatch = url.pathname.match(
+    /^\/api\/([a-f0-9-]{20,64})\/(state|cmd|lsl)$/i
+  );
 
   if (roomMatch) {
     const [, id, action] = roomMatch;
     const room = getRoom(id);
 
     if (!room) {
-      return sendJson(res, 400, { ok: false, error: 'Invalid room id.' });
+      return sendJson(res, 400, {
+        ok: false,
+        error: 'Invalid room id.'
+      });
     }
 
     if (action === 'state' && req.method === 'GET') {
       return sendJson(res, 200, snapshot(room));
     }
 
-    if ((action === 'cmd' && req.method === 'POST') || (action === 'lsl' && req.method === 'POST')) {
+    if (
+      (action === 'cmd' && req.method === 'POST') ||
+      (action === 'lsl' && req.method === 'POST')
+    ) {
       try {
         const body = await readBody(req);
         const result = applyCommand(room, body.cmd, body.value);
 
         return sendJson(res, result.ok ? 200 : 400, result);
       } catch (err) {
-        return sendJson(res, 400, { ok: false, error: err.message });
+        return sendJson(res, 400, {
+          ok: false,
+          error: err.message
+        });
       }
     }
 
-    return sendJson(res, 405, { ok: false, error: 'Method not allowed.' });
+    return sendJson(res, 405, {
+      ok: false,
+      error: 'Method not allowed.'
+    });
   }
 
   const pageMatch = url.pathname.match(/^\/r\/([a-f0-9-]{20,64})$/i);
@@ -404,21 +465,27 @@ const server = http.createServer(async (req, res) => {
 
     if (!room) return res.writeHead(404).end('Room not found');
 
-    const html = fs.readFileSync(path.join(PUBLIC_DIR, 'index.html'), 'utf8')
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'index.html'),
+      'utf8'
+    )
       .replaceAll('__ROOM_ID__', room.id)
       .replaceAll('__WS_PATH__', '/ws');
 
     res.writeHead(200, {
       'content-type': 'text/html; charset=utf-8',
       'cache-control': 'no-store',
-      'content-security-policy': "default-src 'self' https: data: blob:; script-src 'self' 'unsafe-inline' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://w.soundcloud.com https://connect.soundcloud.com; style-src 'self' 'unsafe-inline'; frame-src https:; connect-src 'self' wss: https:; media-src https: blob:"
+      'content-security-policy':
+        "default-src 'self' https: data: blob:; script-src 'self' 'unsafe-inline' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://w.soundcloud.com https://connect.soundcloud.com; style-src 'self' 'unsafe-inline'; frame-src https:; connect-src 'self' wss: https:; media-src https: blob:"
     });
 
     return res.end(html);
   }
 
   if (url.pathname === '/') {
-    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+    res.writeHead(200, {
+      'content-type': 'text/html; charset=utf-8'
+    });
 
     return res.end(`
       <!DOCTYPE html>
@@ -436,14 +503,20 @@ const server = http.createServer(async (req, res) => {
     `);
   }
 
-  res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+  res.writeHead(404, {
+    'content-type': 'text/plain; charset=utf-8'
+  });
+
   res.end('Not found');
 });
 
 const wss = new WebSocketServer({ noServer: true });
 
 server.on('upgrade', (req, socket, head) => {
-  const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+  const url = new URL(
+    req.url,
+    `http://${req.headers.host || 'localhost'}`
+  );
 
   if (url.pathname !== '/ws') return socket.destroy();
 
@@ -488,13 +561,22 @@ wss.on('connection', (ws, req, url) => {
         const result = applyCommand(room, msg.cmd, msg.value);
 
         if (!result.ok) {
-          ws.send(JSON.stringify({ type: 'error', error: result.error }));
+          ws.send(JSON.stringify({
+            type: 'error',
+            error: result.error
+          }));
         }
       } else if (msg.type === 'ping') {
-        ws.send(JSON.stringify({ type: 'pong', time: Date.now() }));
+        ws.send(JSON.stringify({
+          type: 'pong',
+          time: Date.now()
+        }));
       }
     } catch {
-      ws.send(JSON.stringify({ type: 'error', error: 'Invalid message.' }));
+      ws.send(JSON.stringify({
+        type: 'error',
+        error: 'Invalid message.'
+      }));
     }
   });
 
@@ -552,7 +634,6 @@ startServer();
 
 process.on('SIGTERM', () => {
   console.log('SIGTERM received; closing Dew Smart Media server.');
-
   clearInterval(wsHeartbeat);
 
   for (const ws of wss.clients) {
