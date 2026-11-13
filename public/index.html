@@ -7,113 +7,293 @@
 <title>Dew Smart Media</title>
 <style>
 :root{color-scheme:dark;--bg:#100d19;--panel:#211a30;--accent:#b88cff;--text:#f6f0ff;--muted:#b9aeca;--line:#433657}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#302044,var(--bg) 62%);color:var(--text);font:14px/1.45 system-ui,Arial,sans-serif;min-height:100vh;padding:14px}
-.app{max-width:900px;margin:auto}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}.brand{font-weight:800;letter-spacing:.08em}.pill{border:1px solid var(--line);border-radius:999px;padding:5px 10px;color:var(--muted);font-size:12px}.screen{background:#08070c;border:1px solid var(--line);border-radius:18px;overflow:hidden;aspect-ratio:16/9;display:grid;place-items:center;position:relative}.screen iframe,.screen video,.screen audio{width:100%;height:100%;border:0}.placeholder{text-align:center;color:var(--muted);padding:20px}.placeholder strong{display:block;color:var(--text);font-size:20px;margin-bottom:6px}.controls,.panel{background:rgba(33,26,48,.94);border:1px solid var(--line);border-radius:16px;padding:12px;margin-top:12px}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row>*{flex:1}.buttons button,button{background:#39294f;color:var(--text);border:1px solid #624d7d;border-radius:10px;padding:10px 12px;cursor:pointer;font-weight:650}button:hover{background:#50386d}button.primary{background:#7548a3;border-color:#a77bd5}.input{width:100%;background:#130f1d;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:11px}.small{color:var(--muted);font-size:12px}.track{display:flex;gap:8px;align-items:center;padding:9px;border-top:1px solid var(--line)}.track span{flex:1;overflow-wrap:anywhere}.track button{padding:6px 9px}.active{color:#d4b5ff}.hidden{display:none}.warning{color:#ffd68a}.status{font-size:12px;color:var(--muted)}input[type=range]{accent-color:var(--accent)}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at top,#302044,var(--bg) 62%);color:var(--text);font:14px/1.45 system-ui,Arial,sans-serif;min-height:100vh;padding:14px}
+.app{max-width:900px;margin:auto}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+.brand{font-weight:800;letter-spacing:.08em}
+.pill{border:1px solid var(--line);border-radius:999px;padding:5px 10px;color:var(--muted);font-size:12px}
+.screen{background:#08070c;border:1px solid var(--line);border-radius:18px;overflow:hidden;aspect-ratio:16/9;display:grid;place-items:center;position:relative}
+.screen iframe,.screen video,.screen audio{width:100%;height:100%;border:0}
+.placeholder{text-align:center;color:var(--muted);padding:20px}
+.placeholder strong{display:block;color:var(--text);font-size:20px;margin-bottom:6px}
+.controls,.panel{background:rgba(33,26,48,.94);border:1px solid var(--line);border-radius:16px;padding:12px;margin-top:12px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row>*{flex:1}
+.buttons button,button{background:#39294f;color:var(--text);border:1px solid #624d7d;border-radius:10px;padding:10px 12px;cursor:pointer;font-weight:650}
+button:hover{background:#50386d}
+button.primary{background:#7548a3;border-color:#a77bd5}
+.input{width:100%;background:#130f1d;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:11px}
+.small{color:var(--muted);font-size:12px}
+.track{display:flex;gap:8px;align-items:center;padding:9px;border-top:1px solid var(--line)}
+.track span{flex:1;overflow-wrap:anywhere}
+.track button{padding:6px 9px}
+.active{color:#d4b5ff}
+.hidden{display:none}
+.warning{color:#ffd68a}
+.status{font-size:12px;color:var(--muted)}
+input[type=range]{accent-color:var(--accent)}
+
+/* Shared cinema mode */
+.app.cinema-mode{max-width:none;width:100%}
+.app.cinema-mode .screen{
+  height:calc(100vh - 240px);
+  min-height:320px;
+  aspect-ratio:auto;
+  border-radius:12px;
+}
+#cinemaToggle{white-space:nowrap;background:#7548a3;border-color:#a77bd5}
+@media(max-width:600px){
+  .top{align-items:flex-start;flex-wrap:wrap}
+  .app.cinema-mode .screen{height:65vh;min-height:260px}
+}
 </style>
 </head>
 <body>
 <div class="app">
-  <header class="top"><div><div class="brand">💜 DEW SMART MEDIA</div><div class="small">Shared player room · controls are broadcast to connected viewers</div></div><div class="pill" id="connection">Connecting…</div></header>
-  <section class="screen" id="screen"><div class="placeholder"><strong>Dew Smart Media</strong>Waiting for a link…</div></section>
+  <header class="top">
+    <div>
+      <div class="brand">💜 DEW SMART MEDIA</div>
+      <div class="small">Shared player room · controls are broadcast to connected viewers</div>
+    </div>
+    <div class="row" style="flex:0 0 auto">
+      <button id="cinemaToggle">⛶ Cinema mode</button>
+      <div class="pill" id="connection">Connecting…</div>
+    </div>
+  </header>
+
+  <section class="screen" id="screen">
+    <div class="placeholder"><strong>Dew Smart Media</strong>Waiting for a link…</div>
+  </section>
+
   <section class="controls">
     <div class="row buttons">
-      <button id="play" class="primary">▶ Play</button><button id="pause">Ⅱ Pause</button><button id="stop">■ Stop</button><button id="prev">◀ Previous</button><button id="next">Next ▶</button><button id="sync">↻ Sync</button>
+      <button id="play" class="primary">▶ Play</button>
+      <button id="pause">Ⅱ Pause</button>
+      <button id="stop">■ Stop</button>
+      <button id="prev">◀ Previous</button>
+      <button id="next">Next ▶</button>
+      <button id="sync">↻ Sync</button>
     </div>
-    <div class="row" style="margin-top:10px"><label class="small">Volume <strong id="volumeLabel">70%</strong><input id="volume" type="range" min="0" max="100" value="70" style="display:block;width:100%"></label><div class="status" id="status">Stopped</div><div class="status" id="viewerCount">0 connected browsers</div></div>
-    <div class="row" style="margin-top:10px"><input id="seek" type="range" min="0" max="100" value="0" disabled><span class="small" id="timeLabel">--:--</span></div>
+    <div class="row" style="margin-top:10px">
+      <label class="small">Volume <strong id="volumeLabel">70%</strong><input id="volume" type="range" min="0" max="100" value="70" style="display:block;width:100%"></label>
+      <div class="status" id="status">Stopped</div>
+      <div class="status" id="viewerCount">0 connected browsers</div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <input id="seek" type="range" min="0" max="100" value="0" disabled>
+      <span class="small" id="timeLabel">--:--</span>
+    </div>
   </section>
+
   <section class="panel">
-    <strong>Add a media URL</strong><div class="row" style="margin-top:8px"><input class="input" id="url" placeholder="Paste YouTube, Vimeo, SoundCloud, MP4, or embeddable page URL"><button id="add" class="primary" style="flex:0 0 auto">Add to playlist</button></div>
+    <strong>Add a media URL</strong>
+    <div class="row" style="margin-top:8px">
+      <input class="input" id="url" placeholder="Paste YouTube, Vimeo, SoundCloud, MP4, or embeddable page URL">
+      <button id="add" class="primary" style="flex:0 0 auto">Add to playlist</button>
+    </div>
     <div class="small" style="margin-top:7px">Supported sync controls: YouTube, Vimeo, SoundCloud and direct MP4/WebM/MP3/OGG links. Other sites may display in an iframe but can block synchronized playback controls.</div>
   </section>
-  <section class="panel"><div class="row"><strong style="flex:1">Playlist</strong><button id="clear">Clear list</button></div><div id="playlist" class="small" style="margin-top:8px">Playlist is empty.</div></section>
-  <section class="panel"><div class="small">Tip: everyone may need to enable Shared Media in their Second Life viewer and click the player once to allow media/autoplay. Exact sync depends on the site's embed player and each viewer's buffering.</div><div class="small warning" style="margin-top:6px">This page does not reveal Second Life avatar names. The LSL object's JOIN / WHO'S WATCHING menu is an opt-in name list.</div></section>
+
+  <section class="panel">
+    <div class="row">
+      <strong style="flex:1">Playlist</strong>
+      <button id="clear">Clear list</button>
+    </div>
+    <div id="playlist" class="small" style="margin-top:8px">Playlist is empty.</div>
+  </section>
+
+  <section class="panel">
+    <div class="small">Tip: everyone may need to enable Shared Media in their Second Life viewer and click the player once to allow media/autoplay. Exact sync depends on the site's embed player and each viewer's buffering.</div>
+    <div class="small warning" style="margin-top:6px">This page does not reveal Second Life avatar names. The LSL object's JOIN / WHO'S WATCHING menu is an opt-in name list.</div>
+  </section>
 </div>
+
 <script>
 const ROOM = '__ROOM_ID__';
 const WS_PATH = '__WS_PATH__';
 const $ = id => document.getElementById(id);
 const screenEl = $('screen');
+const appEl = document.querySelector('.app');
+const cinemaButton = $('cinemaToggle');
+
 let socket, state = null, player = null, playerKind = 'none', playerKey = '', applying = false, lastCommandRevision = -1;
 let ytReady = false, ytLoading = false, vimeoLoading = false, soundcloudLoading = false;
 
 function api(path, body) {
-  return fetch(`/api/${ROOM}/${path}`, {method: body ? 'POST' : 'GET',headers: body ? {'Content-Type':'application/json'} : {},body: body ? JSON.stringify(body) : undefined}).then(r=>r.json());
+  return fetch(`/api/${ROOM}/${path}`, {
+    method: body ? 'POST' : 'GET',
+    headers: body ? {'Content-Type':'application/json'} : {},
+    body: body ? JSON.stringify(body) : undefined
+  }).then(r=>r.json());
 }
+
 function send(cmd,value) {
-  if (socket && socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({type:'command',cmd,value}));
-  else api('cmd',{cmd,value}).catch(()=>{});
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    socket.send(JSON.stringify({type:'command',cmd,value}));
+  } else {
+    api('cmd',{cmd,value}).catch(()=>{});
+  }
 }
+
 function setConnection(text){$('connection').textContent=text;}
+
 function connect(){
   const scheme = location.protocol === 'https:' ? 'wss:' : 'ws:';
   socket = new WebSocket(`${scheme}//${location.host}${WS_PATH}?room=${encodeURIComponent(ROOM)}`);
   socket.onopen = ()=>setConnection('Connected');
   socket.onclose = ()=>{setConnection('Reconnecting…');setTimeout(connect,1800);};
   socket.onerror = ()=>setConnection('Connection issue');
-  socket.onmessage = e=>{try{const m=JSON.parse(e.data);if(m.type==='state'){state=m.state;renderState();$('viewerCount').textContent=`${m.viewers ?? 1} connected browsers`; }else if(m.type==='error'){setConnection(m.error);}}catch{}};
+  socket.onmessage = e=>{
+    try{
+      const m=JSON.parse(e.data);
+      if(m.type==='state'){
+        state=m.state;
+        renderState();
+        $('viewerCount').textContent=`${m.viewers ?? 1} connected browsers`;
+      }else if(m.type==='error'){
+        setConnection(m.error);
+      }
+    }catch{}
+  };
 }
 
 function parseUrl(raw){
-  let u;try{u=new URL(raw)}catch{return {kind:'invalid'}};
+  let u;
+  try{u=new URL(raw)}catch{return {kind:'invalid'}};
   const host=u.hostname.toLowerCase().replace(/^www\./,'');
   let m;
-  if(host==='youtu.be'){return {kind:'youtube',id:u.pathname.split('/').filter(Boolean)[0]||''};}
+
+  if(host==='youtu.be')return {kind:'youtube',id:u.pathname.split('/').filter(Boolean)[0]||''};
+
   if(host.endsWith('youtube.com')||host==='youtube-nocookie.com'){
     const id=u.searchParams.get('v') || (u.pathname.match(/\/(?:embed|shorts|live)\/([^/?]+)/)||[])[1];
     if(id)return {kind:'youtube',id};
   }
+
   if(host==='vimeo.com'||host==='player.vimeo.com'){
-    m=u.pathname.match(/\/(?:video\/)?(\d+)/);if(m)return {kind:'vimeo',id:m[1]};
+    m=u.pathname.match(/\/(?:video\/)?(\d+)/);
+    if(m)return {kind:'vimeo',id:m[1]};
   }
+
   if(host==='soundcloud.com'||host==='on.soundcloud.com')return {kind:'soundcloud',url:raw};
   if(/\.(mp4|webm|mp3|ogg|m4a|wav)(?:$|\?)/i.test(raw))return {kind:'html5',url:raw};
   return {kind:'generic',url:raw};
 }
+
 function clearPlayer(){
-  try{if(player && player.destroy)player.destroy();else if(player && player.unload)player.unload();}catch{}
-  player=null;playerKind='none';screenEl.innerHTML='<div class="placeholder"><strong>Dew Smart Media</strong>Loading shared media…</div>';
+  try{
+    if(player && player.destroy)player.destroy();
+    else if(player && player.unload)player.unload();
+  }catch{}
+  player=null;
+  playerKind='none';
+  screenEl.innerHTML='<div class="placeholder"><strong>Dew Smart Media</strong>Loading shared media…</div>';
 }
+
 function ensureScript(src, test, callback){
   if(test()){callback();return;}
   const old=document.querySelector(`script[data-src="${src}"]`);
   if(old){old.addEventListener('load',callback,{once:true});return;}
-  const s=document.createElement('script');s.src=src;s.async=true;s.dataset.src=src;s.onload=callback;s.onerror=()=>setConnection('Provider API failed to load');document.head.appendChild(s);
+  const s=document.createElement('script');
+  s.src=src;s.async=true;s.dataset.src=src;s.onload=callback;
+  s.onerror=()=>setConnection('Provider API failed to load');
+  document.head.appendChild(s);
 }
+
 function loadMedia(url){
-  if(!url){clearPlayer();$('status').textContent='No media selected';return;}
-  if(playerKey===url && player){applyPlaybackState();return;}
-  playerKey=url;clearPlayer();
-  const p=parseUrl(url);playerKind=p.kind;
-  if(p.kind==='invalid'){screenEl.innerHTML='<div class="placeholder">Invalid URL</div>';return;}
+  if(!url){
+    clearPlayer();
+    $('status').textContent='No media selected';
+    return;
+  }
+
+  if(playerKey===url && player){
+    applyPlaybackState();
+    return;
+  }
+
+  playerKey=url;
+  clearPlayer();
+  const p=parseUrl(url);
+  playerKind=p.kind;
+
+  if(p.kind==='invalid'){
+    screenEl.innerHTML='<div class="placeholder">Invalid URL</div>';
+    return;
+  }
+
   if(p.kind==='youtube'){
-    const holder=document.createElement('div');holder.id='yt-player';screenEl.replaceChildren(holder);
+    const holder=document.createElement('div');
+    holder.id='yt-player';
+    screenEl.replaceChildren(holder);
     ensureScript('https://www.youtube.com/iframe_api',()=>!!window.YT&&!!YT.Player,()=>{
       window.onYouTubeIframeAPIReady=()=>createYT(p.id);
       if(window.YT&&YT.Player)createYT(p.id);
     });
-  } else if(p.kind==='vimeo'){
-    const frame=document.createElement('iframe');frame.allow='autoplay; fullscreen; picture-in-picture';frame.allowFullscreen=true;frame.src=`https://player.vimeo.com/video/${p.id}?api=1&autoplay=0&playsinline=1&controls=0`;screenEl.replaceChildren(frame);
-    ensureScript('https://player.vimeo.com/api/player.js',()=>!!window.Vimeo&&!!Vimeo.Player,()=>{player=new Vimeo.Player(frame);player.ready().then(()=>applyPlaybackState()).catch(()=>{});});
-  } else if(p.kind==='soundcloud'){
-    const frame=document.createElement('iframe');frame.allow='autoplay';frame.src=`https://w.soundcloud.com/player/?url=${encodeURIComponent(p.url)}&auto_play=false&visual=true`;screenEl.replaceChildren(frame);
-    ensureScript('https://w.soundcloud.com/player/api.js',()=>!!window.SC&&!!SC.Widget,()=>{player=SC.Widget(frame);player.bind(SC.Widget.Events.READY,()=>applyPlaybackState());});
-  } else if(p.kind==='html5'){
-    const media=document.createElement(/\.(mp3|ogg|m4a|wav)(?:$|\?)/i.test(url)?'audio':'video');media.src=url;media.controls=false;media.playsInline=true;screenEl.replaceChildren(media);player=media;applyPlaybackState();
-  } else {
-    const frame=document.createElement('iframe');frame.src=url;frame.allow='autoplay; encrypted-media; picture-in-picture; fullscreen';frame.allowFullscreen=true;screenEl.replaceChildren(frame);player=frame;
+  }else if(p.kind==='vimeo'){
+    const frame=document.createElement('iframe');
+    frame.allow='autoplay; fullscreen; picture-in-picture';
+    frame.allowFullscreen=true;
+    frame.src=`https://player.vimeo.com/video/${p.id}?api=1&autoplay=0&playsinline=1&controls=0`;
+    screenEl.replaceChildren(frame);
+    ensureScript('https://player.vimeo.com/api/player.js',()=>!!window.Vimeo&&!!Vimeo.Player,()=>{
+      player=new Vimeo.Player(frame);
+      player.ready().then(()=>applyPlaybackState()).catch(()=>{});
+    });
+  }else if(p.kind==='soundcloud'){
+    const frame=document.createElement('iframe');
+    frame.allow='autoplay';
+    frame.src=`https://w.soundcloud.com/player/?url=${encodeURIComponent(p.url)}&auto_play=false&visual=true`;
+    screenEl.replaceChildren(frame);
+    ensureScript('https://w.soundcloud.com/player/api.js',()=>!!window.SC&&!!SC.Widget,()=>{
+      player=SC.Widget(frame);
+      player.bind(SC.Widget.Events.READY,()=>applyPlaybackState());
+    });
+  }else if(p.kind==='html5'){
+    const media=document.createElement(/\.(mp3|ogg|m4a|wav)(?:$|\?)/i.test(url)?'audio':'video');
+    media.src=url;
+    media.controls=false;
+    media.playsInline=true;
+    screenEl.replaceChildren(media);
+    player=media;
+    applyPlaybackState();
+  }else{
+    const frame=document.createElement('iframe');
+    frame.src=url;
+    frame.allow='autoplay; encrypted-media; picture-in-picture; fullscreen';
+    frame.allowFullscreen=true;
+    screenEl.replaceChildren(frame);
+    player=frame;
     setConnection('Generic page: sync controls may be unavailable');
   }
 }
+
 function createYT(id){
-  const mount=$('yt-player');if(!mount||playerKey==='')return;
-  player=new YT.Player('yt-player',{videoId:id,playerVars:{autoplay:0,controls:0,playsinline:1,rel:0},events:{onReady:()=>applyPlaybackState(),onError:()=>setConnection('YouTube embed unavailable for this video')}});
+  const mount=$('yt-player');
+  if(!mount||playerKey==='')return;
+  player=new YT.Player('yt-player',{
+    videoId:id,
+    playerVars:{autoplay:0,controls:0,playsinline:1,rel:0},
+    events:{
+      onReady:()=>applyPlaybackState(),
+      onError:()=>setConnection('YouTube embed unavailable for this video')
+    }
+  });
 }
-function safeCall(fn){try{const result=fn();if(result&&result.catch)result.catch(()=>{});}catch{}}
+
+function safeCall(fn){
+  try{
+    const result=fn();
+    if(result&&result.catch)result.catch(()=>{});
+  }catch{}
+}
+
 function applyPlaybackState(){
   if(!state||!player)return;
-  const pos=state.status==='playing' ? state.position : state.position;
+  const pos=state.position;
   const vol=Math.round(state.volume*100);
+
   if(playerKind==='youtube'&&player.setVolume){
     player.setVolume(vol);
     const now=player.getCurrentTime?player.getCurrentTime():0;
@@ -127,59 +307,150 @@ function applyPlaybackState(){
     safeCall(()=>player.getCurrentTime().then(now=>{if(Math.abs(now-pos)>2.0)player.setCurrentTime(pos);}));
     if(state.status==='playing')safeCall(()=>player.play());
     else if(state.status==='paused')safeCall(()=>player.pause());
-    else if(state.status==='stopped'){safeCall(()=>player.pause());safeCall(()=>player.setCurrentTime(0));}
+    else if(state.status==='stopped'){
+      safeCall(()=>player.pause());
+      safeCall(()=>player.setCurrentTime(0));
+    }
   }
   else if(playerKind==='soundcloud'&&player.setVolume){
     safeCall(()=>player.setVolume(vol));
     safeCall(()=>player.getPosition(now=>{if(Math.abs(now/1000-pos)>2.0)player.seekTo(pos*1000);}));
     if(state.status==='playing')safeCall(()=>player.play());
     else if(state.status==='paused')safeCall(()=>player.pause());
-    else if(state.status==='stopped'){safeCall(()=>player.seekTo(0));safeCall(()=>player.pause());}
+    else if(state.status==='stopped'){
+      safeCall(()=>player.seekTo(0));
+      safeCall(()=>player.pause());
+    }
   }
   else if(playerKind==='html5'){
     player.volume=state.volume;
-    if(Math.abs((player.currentTime||0)-pos)>2.0){try{player.currentTime=pos;}catch{}}
+    if(Math.abs((player.currentTime||0)-pos)>2.0){
+      try{player.currentTime=pos;}catch{}
+    }
     if(state.status==='playing')safeCall(()=>player.play());
     else if(state.status==='paused'||state.status==='stopped')safeCall(()=>player.pause());
   }
 }
+
 function renderPlaylist(){
-  const el=$('playlist');el.innerHTML='';
-  if(!state||!state.playlist||!state.playlist.length){el.textContent='Playlist is empty.';return;}
-  state.playlist.forEach((url,i)=>{const row=document.createElement('div');row.className='track';const s=document.createElement('span');s.textContent=`${i===state.index?'▶ ':''}${i+1}. ${url}`;if(i===state.index)s.className='active';const b=document.createElement('button');b.textContent='Play';b.onclick=()=>send('select',i);row.append(s,b);el.append(row);});
+  const el=$('playlist');
+  el.innerHTML='';
+  if(!state||!state.playlist||!state.playlist.length){
+    el.textContent='Playlist is empty.';
+    return;
+  }
+
+  state.playlist.forEach((url,i)=>{
+    const row=document.createElement('div');
+    row.className='track';
+    const s=document.createElement('span');
+    s.textContent=`${i===state.index?'▶ ':''}${i+1}. ${url}`;
+    if(i===state.index)s.className='active';
+    const b=document.createElement('button');
+    b.textContent='Play';
+    b.onclick=()=>send('select',i);
+    row.append(s,b);
+    el.append(row);
+  });
 }
+
 function renderState(){
   if(!state)return;
+
+  // Apply the shared cinema setting to every connected browser
+  const cinema=!!state.cinemaMode;
+  appEl.classList.toggle('cinema-mode',cinema);
+  cinemaButton.textContent=cinema?'↙ Exit cinema mode':'⛶ Cinema mode';
+
   $('status').textContent=`${state.on?'ON':'OFF'} · ${state.status.toUpperCase()}`;
-  $('volume').value=Math.round(state.volume*100);$('volumeLabel').textContent=`${Math.round(state.volume*100)}%`;
+  $('volume').value=Math.round(state.volume*100);
+  $('volumeLabel').textContent=`${Math.round(state.volume*100)}%`;
+
   renderPlaylist();
-  if(!state.on){clearPlayer();screenEl.innerHTML='<div class="placeholder"><strong>Dew Smart Media is OFF</strong>Turn it on from the LSL menu.</div>';return;}
-  if(state.currentUrl && state.currentUrl!==playerKey)loadMedia(state.currentUrl);else applyPlaybackState();
+
+  if(!state.on){
+    clearPlayer();
+    screenEl.innerHTML='<div class="placeholder"><strong>Dew Smart Media is OFF</strong>Turn it on from the LSL menu.</div>';
+    return;
+  }
+
+  if(state.currentUrl && state.currentUrl!==playerKey)loadMedia(state.currentUrl);
+  else applyPlaybackState();
 }
-$('play').onclick=()=>send('play');$('pause').onclick=()=>send('pause');$('stop').onclick=()=>send('stop');$('next').onclick=()=>send('next');$('prev').onclick=()=>send('previous');$('sync').onclick=()=>send('sync');
-$('add').onclick=()=>{const value=$('url').value.trim();if(value){send('add',value);$('url').value='';}};
-$('url').addEventListener('keydown',e=>{if(e.key==='Enter')$('add').click();});
-$('clear').onclick=()=>{if(confirm('Clear the shared playlist?'))send('clear');};
-$('volume').oninput=e=>{$('volumeLabel').textContent=`${e.target.value}%`;};
+
+// Shared cinema button
+cinemaButton.onclick=()=>{
+  send('cinema',!(state && state.cinemaMode));
+};
+
+$('play').onclick=()=>send('play');
+$('pause').onclick=()=>send('pause');
+$('stop').onclick=()=>send('stop');
+$('next').onclick=()=>send('next');
+$('prev').onclick=()=>send('previous');
+$('sync').onclick=()=>send('sync');
+
+$('add').onclick=()=>{
+  const value=$('url').value.trim();
+  if(value){
+    send('add',value);
+    $('url').value='';
+  }
+};
+
+$('url').addEventListener('keydown',e=>{
+  if(e.key==='Enter')$('add').click();
+});
+
+$('clear').onclick=()=>{
+  if(confirm('Clear the shared playlist?'))send('clear');
+};
+
+$('volume').oninput=e=>{
+  $('volumeLabel').textContent=`${e.target.value}%`;
+};
+
 $('volume').onchange=e=>send('volume',Number(e.target.value)/100);
 $('seek').onchange=e=>send('seek',Number(e.target.value));
+
 connect();
-api('state').then(s=>{state=s;renderState();}).catch(()=>{});
+
+api('state').then(s=>{
+  state=s;
+  renderState();
+}).catch(()=>{});
+
 setInterval(()=>{
   if(!state)return;
+
   let pos=state.position;
-  if(state.status==='playing' && state.startedAt) pos += Math.max(0,(Date.now()-state.serverTime)/1000);
+  if(state.status==='playing' && state.startedAt){
+    pos += Math.max(0,(Date.now()-state.serverTime)/1000);
+  }
+
   $('timeLabel').textContent=`${Math.floor(pos/60)}:${String(Math.floor(pos%60)).padStart(2,'0')}`;
+
   let duration=0;
-  try {
-    if(playerKind==='youtube'&&player&&player.getDuration) duration=player.getDuration();
-    else if(playerKind==='html5'&&player) duration=player.duration;
-    else if(playerKind==='vimeo'&&player&&player.getDuration) player.getDuration().then(d=>updateDuration(d));
-    else if(playerKind==='soundcloud'&&player&&player.getDuration) player.getDuration(d=>updateDuration(d/1000));
-  } catch {}
-  if(duration>0){$('seek').disabled=false;$('seek').max=duration;$('seek').value=Math.min(duration,pos);}
+  try{
+    if(playerKind==='youtube'&&player&&player.getDuration)duration=player.getDuration();
+    else if(playerKind==='html5'&&player)duration=player.duration;
+    else if(playerKind==='vimeo'&&player&&player.getDuration)player.getDuration().then(d=>updateDuration(d));
+    else if(playerKind==='soundcloud'&&player&&player.getDuration)player.getDuration(d=>updateDuration(d/1000));
+  }catch{}
+
+  if(duration>0){
+    $('seek').disabled=false;
+    $('seek').max=duration;
+    $('seek').value=Math.min(duration,pos);
+  }
 },1000);
-function updateDuration(d){if(Number.isFinite(d)&&d>0){$('seek').disabled=false;$('seek').max=d;}}
+
+function updateDuration(d){
+  if(Number.isFinite(d)&&d>0){
+    $('seek').disabled=false;
+    $('seek').max=d;
+  }
+}
 </script>
 </body>
 </html>
