@@ -34,6 +34,9 @@ button.primary{background:#7548a3;border-color:#a77bd5}
 .status{font-size:12px;color:var(--muted)}
 input[type=range]{accent-color:var(--accent)}
 
+.header-buttons{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.header-buttons button{flex:0 0 auto;background:#7548a3;border-color:#a77bd5;white-space:nowrap}
+
 /* Shared cinema mode */
 .app.cinema-mode{max-width:none;width:100%}
 .app.cinema-mode .screen{
@@ -42,10 +45,29 @@ input[type=range]{accent-color:var(--accent)}
   aspect-ratio:auto;
   border-radius:12px;
 }
-#cinemaToggle{white-space:nowrap;background:#7548a3;border-color:#a77bd5}
+
+/* Real browser fullscreen */
+:fullscreen{
+  background:var(--bg);
+}
+:fullscreen body{
+  min-height:100vh;
+  padding:14px;
+}
+:fullscreen .app{
+  max-width:none;
+  width:100%;
+}
+:fullscreen .screen{
+  height:calc(100vh - 180px);
+  min-height:300px;
+  aspect-ratio:auto;
+}
 @media(max-width:600px){
   .top{align-items:flex-start;flex-wrap:wrap}
+  .header-buttons{width:100%}
   .app.cinema-mode .screen{height:65vh;min-height:260px}
+  :fullscreen .screen{height:65vh;min-height:260px}
 }
 </style>
 </head>
@@ -56,8 +78,9 @@ input[type=range]{accent-color:var(--accent)}
       <div class="brand">💜 DEW SMART MEDIA</div>
       <div class="small">Shared player room · controls are broadcast to connected viewers</div>
     </div>
-    <div class="row" style="flex:0 0 auto">
+    <div class="header-buttons">
       <button id="cinemaToggle">⛶ Cinema mode</button>
+      <button id="fullScreenToggle">⛶ Full Screen</button>
       <div class="pill" id="connection">Connecting…</div>
     </div>
   </header>
@@ -116,6 +139,7 @@ const $ = id => document.getElementById(id);
 const screenEl = $('screen');
 const appEl = document.querySelector('.app');
 const cinemaButton = $('cinemaToggle');
+const fullScreenButton = $('fullScreenToggle');
 
 let socket, state = null, player = null, playerKind = 'none', playerKey = '', applying = false, lastCommandRevision = -1;
 let ytReady = false, ytLoading = false, vimeoLoading = false, soundcloudLoading = false;
@@ -357,7 +381,6 @@ function renderPlaylist(){
 function renderState(){
   if(!state)return;
 
-  // Apply the shared cinema setting to every connected browser
   const cinema=!!state.cinemaMode;
   appEl.classList.toggle('cinema-mode',cinema);
   cinemaButton.textContent=cinema?'↙ Exit cinema mode':'⛶ Cinema mode';
@@ -378,10 +401,27 @@ function renderState(){
   else applyPlaybackState();
 }
 
-// Shared cinema button
+// Shared cinema mode button
 cinemaButton.onclick=()=>{
   send('cinema',!(state && state.cinemaMode));
 };
+
+// Full screen button: affects only this browser
+fullScreenButton.onclick=async()=>{
+  try{
+    if(document.fullscreenElement){
+      await document.exitFullscreen();
+    }else{
+      await document.documentElement.requestFullscreen();
+    }
+  }catch{
+    setConnection('Fullscreen unavailable in this browser');
+  }
+};
+
+document.addEventListener('fullscreenchange',()=>{
+  fullScreenButton.textContent=document.fullscreenElement?'↙ Exit Full Screen':'⛶ Full Screen';
+});
 
 $('play').onclick=()=>send('play');
 $('pause').onclick=()=>send('pause');
