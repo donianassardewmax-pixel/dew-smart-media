@@ -124,7 +124,7 @@ function snapshot(room) {
     startedAt: room.status === 'playing' ? now : null,
     serverTime: now,
     updatedAt: room.updatedAt,
-    revision: room.revision
+    revision: room.revision || 0
   };
 }
 
@@ -333,8 +333,48 @@ function applyCommand(room, command, value) {
 
       if (room.status === 'playing') {
         room.startedAt = now;
+      } else {
+        room.startedAt = null;
       }
       break;
+
+    // Automatic next-track command.
+    // The revision check prevents two viewers from advancing twice.
+    case 'auto_next': {
+      const expectedRevision = Number(value);
+      const currentRevision = Number(room.revision || 0);
+
+      // Ignore duplicate or outdated requests.
+      if (
+        !Number.isFinite(expectedRevision) ||
+        expectedRevision !== currentRevision ||
+        room.status !== 'playing' ||
+        !room.on
+      ) {
+        return {
+          ok: true,
+          ignored: true,
+          state: snapshot(room)
+        };
+      }
+
+      if (!room.playlist.length) {
+        return {
+          ok: false,
+          error: 'Playlist is empty.'
+        };
+      }
+
+      const len = room.playlist.length;
+
+      room.index = (room.index + 1 + len) % len;
+      room.currentUrl = room.playlist[room.index];
+      room.position = 0;
+      room.status = 'playing';
+      room.on = true;
+      room.startedAt = now;
+      break;
+    }
 
     case 'cinema':
       room.cinemaMode = !!value;
