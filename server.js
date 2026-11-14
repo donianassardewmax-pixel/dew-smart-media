@@ -329,6 +329,11 @@ function applyCommand(room, command, value) {
     }
 
     case 'sync':
+      room.position = currentPosition(room, now);
+
+      if (room.status === 'playing') {
+        room.startedAt = now;
+      }
       break;
 
     case 'cinema':
