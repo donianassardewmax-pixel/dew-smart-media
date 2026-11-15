@@ -957,6 +957,18 @@ const server = http.createServer(async (req, res) => {
         const body = await readBody(req);
         const result = applyCommand(room, body.cmd, body.value);
 
+        // LSL only needs a compact state response. Returning the full playlist
+        // here can send thousands of tracks into a memory-limited LSL script.
+        if (action === 'lsl' && result.ok) {
+          result.state = snapshot(room, {
+            lsl: true,
+            trackOffset: 0,
+            trackLimit: 1,
+            playlistOffset: 0,
+            playlistLimit: 1
+          });
+        }
+
         return sendJson(res, result.ok ? 200 : 400, result);
       } catch (err) {
         return sendJson(res, 400, {
