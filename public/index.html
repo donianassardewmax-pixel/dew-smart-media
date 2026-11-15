@@ -282,6 +282,7 @@ let player = null;
 let playerKind = 'none';
 let playerKey = '';
 let selectedTracks = new Set();
+let lastAutoNextRevision = -1;
 
 function api(path, body) {
   return fetch(`/api/${ROOM}/${path}`, {
@@ -303,6 +304,16 @@ function send(cmd, value) {
   } else {
     api('cmd',{cmd,value}).catch(showError);
   }
+}
+
+function requestAutoNext() {
+  if (!state || state.status !== 'playing' || !state.on) return;
+
+  const revision = Number(state.revision || 0);
+  if (lastAutoNextRevision === revision) return;
+
+  lastAutoNextRevision = revision;
+  send('auto_next', revision);
 }
 
 function showError(err) {
@@ -470,6 +481,7 @@ function loadMedia(url) {
       () => !!window.Vimeo && !!Vimeo.Player,
       () => {
         player = new Vimeo.Player(frame);
+        player.on('ended', () => requestAutoNext());
         player.ready().then(() => applyPlaybackState()).catch(()=>{});
       }
     );
@@ -488,6 +500,7 @@ function loadMedia(url) {
       () => {
         player = SC.Widget(frame);
         player.bind(SC.Widget.Events.READY,() => applyPlaybackState());
+        player.bind(SC.Widget.Events.FINISH,() => requestAutoNext());
       }
     );
 
@@ -502,6 +515,7 @@ function loadMedia(url) {
 
     screenEl.replaceChildren(media);
     player = media;
+    media.addEventListener('ended', () => requestAutoNext());
     applyPlaybackState();
 
   } else {
@@ -532,6 +546,9 @@ function createYT(id) {
     },
     events:{
       onReady:() => applyPlaybackState(),
+      onStateChange:(event) => {
+        if (event.data === YT.PlayerState.ENDED) requestAutoNext();
+      },
       onError:() => setConnection('YouTube embed unavailable for this video')
     }
   });
