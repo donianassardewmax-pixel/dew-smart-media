@@ -48,6 +48,7 @@ function defaultRoom(id) {
     startedAt: null,
     cinemaMode: false,
     shuffle: false,
+    shuffleNextIndex: -1,
     updatedAt: Date.now(),
     revision: 0
   };
@@ -133,6 +134,7 @@ function normalizeRoom(room) {
   }
 
   if (typeof room.shuffle !== 'boolean') room.shuffle = false;
+  if (!Number.isInteger(room.shuffleNextIndex)) room.shuffleNextIndex = -1;
   if (!Number.isFinite(Number(room.volume))) room.volume = 0.70;
   if (!Number.isFinite(Number(room.position))) room.position = 0;
   if (!Number.isInteger(room.index)) room.index = -1;
@@ -249,7 +251,7 @@ function snapshot(room, options = null) {
     : null;
 
   const nextIndex = tracks.length
-    ? (room.index + 1 + tracks.length) % tracks.length
+    ? nextTrackIndex(room)
     : -1;
 
   const nextTrack = nextIndex >= 0
@@ -361,6 +363,7 @@ function startTrack(room, index, now) {
   }
 
   room.index = index;
+  room.shuffleNextIndex = -1;
   room.currentUrl = list.tracks[index].url;
   room.position = 0;
   room.status = 'playing';
@@ -377,16 +380,28 @@ function nextTrackIndex(room) {
   const length = list.tracks.length;
 
   if (room.shuffle && length > 1) {
-    let index = room.index;
+    let candidate = Number(room.shuffleNextIndex);
 
-    // Avoid immediately repeating the current track.
-    while (index === room.index) {
-      index = Math.floor(Math.random() * length);
+    if (
+      !Number.isInteger(candidate) ||
+      candidate < 0 ||
+      candidate >= length ||
+      candidate === room.index
+    ) {
+      if (room.index < 0) {
+        candidate = Math.floor(Math.random() * length);
+      } else {
+        candidate = Math.floor(Math.random() * (length - 1));
+        if (candidate >= room.index) candidate++;
+      }
+
+      room.shuffleNextIndex = candidate;
     }
 
-    return index;
+    return candidate;
   }
 
+  room.shuffleNextIndex = -1;
   return (room.index + 1 + length) % length;
 }
 
@@ -656,6 +671,7 @@ function applyCommand(room, command, value) {
       room.shuffle = typeof value === 'boolean'
         ? value
         : !room.shuffle;
+      room.shuffleNextIndex = -1;
       break;
 
     case 'sync':
@@ -838,6 +854,11 @@ function applyCommand(room, command, value) {
 
   room.updatedAt = now;
   room.revision = (room.revision || 0) + 1;
+
+  // Cache the next randomized track so the NOW/NEXT labels and playback
+  // agree before the current track finishes.
+  if (room.shuffle) nextTrackIndex(room);
+  else room.shuffleNextIndex = -1;
 
   persistRoom(room);
   broadcast(room);
