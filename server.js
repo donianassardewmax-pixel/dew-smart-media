@@ -523,6 +523,30 @@ function applyCommand(room, command, value) {
       break;
     }
 
+    case 'rename_track': {
+      const data = value && typeof value === 'object' ? value : {};
+      const index = Number(data.index);
+      const title = String(data.title || '').trim().slice(0, 180);
+
+      if (!Number.isInteger(index) || index < 0 || index >= list.tracks.length) {
+        return {
+          ok: false,
+          error: 'Invalid track index.'
+        };
+      }
+
+      if (!title) {
+        return {
+          ok: false,
+          error: 'Song name cannot be empty.'
+        };
+      }
+
+      // Change only the display title. Keep the URL and playback state intact.
+      list.tracks[index].title = title;
+      break;
+    }
+
     case 'play':
       if (!room.currentUrl && list.tracks.length) {
         room.index = Math.max(0, room.index);
