@@ -684,7 +684,24 @@ function renderPlaylist() {
     later.textContent = 'Play Next';
     later.onclick = () => send('play_next',i);
 
-    row.append(check,name,now,later);
+    const edit = document.createElement('button');
+    edit.textContent = 'Edit';
+    edit.title = 'Edit song name';
+    edit.onclick = () => {
+      const updatedTitle = window.prompt('Edit song name:', track.title || '');
+      if (updatedTitle === null) return;
+
+      const cleanTitle = updatedTitle.trim();
+
+      if (!cleanTitle) {
+        setConnection('Song name cannot be empty');
+        return;
+      }
+
+      send('rename_track',{index:i,title:cleanTitle});
+    };
+
+    row.append(check,name,now,later,edit);
     el.appendChild(row);
   });
 }
