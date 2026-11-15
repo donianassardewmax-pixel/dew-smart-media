@@ -238,7 +238,7 @@ function currentPosition(room, now = Date.now()) {
   return Math.max(0, room.position || 0);
 }
 
-function snapshot(room) {
+function snapshot(room, options = null) {
   syncLegacyPlaylist(room);
 
   const now = Date.now();
@@ -256,21 +256,48 @@ function snapshot(room) {
     ? tracks[nextIndex]
     : null;
 
+  const lslMode = !!(options && options.lsl);
+  const trackOffset = lslMode
+    ? Math.max(0, Number(options.trackOffset) || 0)
+    : 0;
+  const trackLimit = lslMode
+    ? Math.min(12, Math.max(1, Number(options.trackLimit) || 6))
+    : tracks.length;
+  const playlistOffset = lslMode
+    ? Math.max(0, Number(options.playlistOffset) || 0)
+    : 0;
+  const playlistLimit = lslMode
+    ? Math.min(12, Math.max(1, Number(options.playlistLimit) || 6))
+    : room.playlists.length;
+
+  const playlistSummaries = room.playlists.map(p => ({
+    id: p.id,
+    name: p.name,
+    count: p.tracks.length
+  }));
+
   return {
     id: room.id,
     on: room.on,
     status: room.status,
 
-    // Keep the old URL array for compatibility.
-    playlist: room.playlist,
+    // Keep the full legacy URL array for the web player.
+    // LSL receives an empty legacy array to avoid duplicating thousands of URLs.
+    playlist: lslMode ? [] : room.playlist,
 
-    // New track information.
-    playlistItems: tracks,
-    playlists: room.playlists.map(p => ({
-      id: p.id,
-      name: p.name,
-      count: p.tracks.length
-    })),
+    // Web gets all tracks; LSL requests small pages to protect script memory.
+    playlistItems: lslMode
+      ? tracks.slice(trackOffset, trackOffset + trackLimit)
+      : tracks,
+    trackCount: tracks.length,
+    trackOffset: lslMode ? trackOffset : 0,
+
+    playlists: lslMode
+      ? playlistSummaries.slice(playlistOffset, playlistOffset + playlistLimit)
+      : playlistSummaries,
+    playlistCount: room.playlists.length,
+    playlistOffset: lslMode ? playlistOffset : 0,
+
     activePlaylistId: room.activePlaylistId,
     activePlaylistName: list ? list.name : 'Main Playlist',
 
@@ -907,6 +934,18 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (action === 'state' && req.method === 'GET') {
+      const lslMode = url.searchParams.get('lsl') === '1';
+
+      if (lslMode) {
+        return sendJson(res, 200, snapshot(room, {
+          lsl: true,
+          trackOffset: url.searchParams.get('trackOffset'),
+          trackLimit: url.searchParams.get('trackLimit'),
+          playlistOffset: url.searchParams.get('playlistOffset'),
+          playlistLimit: url.searchParams.get('playlistLimit')
+        }));
+      }
+
       return sendJson(res, 200, snapshot(room));
     }
 
