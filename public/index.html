@@ -65,13 +65,22 @@ button{
 button:hover{background:#50386d}
 button.primary{background:#7548a3;border-color:#a77bd5}
 button.danger{background:var(--danger);border-color:#b75d7d}
-body.cinema-mode .controls,
+/* Cinema Mode hides the extra panels but keeps playback controls visible. */
+body.cinema-mode{padding:8px}
+body.cinema-mode .app,
+body.full-mode .app{max-width:none;width:100%}
 body.cinema-mode .panel{display:none}
-body.cinema-mode .screen{
-  aspect-ratio:16/9;
+body.cinema-mode .screen,
+body.full-mode .screen{
   width:100%;
+  height:calc(100vh - 260px);
+  min-height:240px;
+  aspect-ratio:auto;
   border-radius:10px;
 }
+body.full-mode{padding:8px}
+body.full-mode .screen{height:calc(100vh - 260px)}
+
 button:disabled{opacity:.4;cursor:not-allowed}
 .input,.select{
   width:100%;background:#130f1d;color:var(--text);
@@ -731,8 +740,9 @@ $('fullScreen').onclick = async () => {
 };
 
 document.addEventListener('fullscreenchange',() => {
-  $('fullScreen').textContent =
-    document.fullscreenElement ? 'Exit Full Mode' : 'Full Mode';
+  const active = !!document.fullscreenElement;
+  document.body.classList.toggle('full-mode',active);
+  $('fullScreen').textContent = active ? 'Exit Full Mode' : 'Full Mode';
 });
 
 /* Hide/show the playlist only in this browser. */
